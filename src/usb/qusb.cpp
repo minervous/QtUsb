@@ -415,8 +415,7 @@ bool QUsb::removeDevice(const QUsb::Id &id)
 
     DbgPrintFuncName();
     const int pos = this->findDevice(id, m_list);
-    // TODO: Seems bug in condition and returned value: pos = -1 if not found, else pos = index
-    if (pos > 0) {
+    if (pos >= 0) {
         m_list.removeAt(pos);
         return true;
     }

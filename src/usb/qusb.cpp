@@ -9,10 +9,8 @@ Q_LOGGING_CATEGORY(qUsb, "qusb")
 
 #define DbgPrintError() qCWarning(qUsb, "In %s, at %s:%d", Q_FUNC_INFO, __FILE__, __LINE__)
 #define DbgPrintFuncName()             \
-    if (m_log_level >= QUsb::logDebug) \
     qCDebug(qUsb) << "***[" << Q_FUNC_INFO << "]***"
 #define DbgPrintCB()                        \
-    if (info->logLevel() >= QUsb::logDebug) \
     qCDebug(qUsb) << "***[" << Q_FUNC_INFO << "]***"
 
 static libusb_hotplug_callback_handle callback_handle;
@@ -237,7 +235,7 @@ QUsb::QUsb(QObject *parent)
         return;
     }
 
-    libusb_set_option(d->m_ctx, LIBUSB_OPTION_LOG_LEVEL, LIBUSB_LOG_LEVEL_WARNING);
+    libusb_set_option(d->m_ctx, LIBUSB_OPTION_LOG_LEVEL, LIBUSB_LOG_LEVEL_INFO);
 
     // Populate list once
     m_system_list = devices();
@@ -458,6 +456,8 @@ void QUsb::setLogLevel(QUsb::LogLevel level)
         libusb_set_option(d->m_ctx, LIBUSB_OPTION_LOG_LEVEL, LIBUSB_LOG_LEVEL_DEBUG);
     else if (m_log_level >= QUsb::logWarning)
         libusb_set_option(d->m_ctx, LIBUSB_OPTION_LOG_LEVEL, LIBUSB_LOG_LEVEL_WARNING);
+    else if (m_log_level >= QUsb::logInfo)
+        libusb_set_option(d->m_ctx, LIBUSB_OPTION_LOG_LEVEL, LIBUSB_LOG_LEVEL_INFO);
     else
         libusb_set_option(d->m_ctx, LIBUSB_OPTION_LOG_LEVEL, LIBUSB_LOG_LEVEL_ERROR);
 }

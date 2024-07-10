@@ -291,7 +291,8 @@ QUsb::~QUsb()
  */
 void QUsb::checkDevices()
 {
-    DbgPrintFuncName();
+    if (m_log_level >= QUsb::logDebug)
+        DbgPrintFuncName();
     Q_D(QUsb);
     QUsb::IdList list;
 

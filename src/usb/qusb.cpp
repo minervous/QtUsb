@@ -302,7 +302,7 @@ void QUsb::checkDevices()
     if (d->m_has_hotplug) {
         libusb_handle_events_timeout_completed(d->m_ctx, &t, Q_NULLPTR);
     } else {
-        list = devices();
+        list = getDevices(m_log_level >= QUsb::logDebug);
         monitorDevices(list);
     }
 }
@@ -312,13 +312,20 @@ void QUsb::checkDevices()
  */
 QUsb::IdList QUsb::devices()
 {
+    return getDevices();
+}
+
+QUsb::IdList QUsb::getDevices(bool extraLogs)
+{
     QUsb::IdList list;
     ssize_t cnt; // holding number of devices in list
     libusb_device **devs;
     libusb_context *ctx;
     struct hid_device_info *hid_devs, *cur_hid_dev;
 
-    qCDebug(qUsb) << "QUsb devices";
+    if (extraLogs) {
+        qCDebug(qUsb) << "call libusb_get_device_list";
+    }
 
     libusb_init(&ctx);
     libusb_set_option(ctx, LIBUSB_OPTION_LOG_LEVEL, LIBUSB_LOG_LEVEL_NONE);
@@ -328,12 +335,18 @@ QUsb::IdList QUsb::devices()
         libusb_free_device_list(devs, 1);
         return list;
     }
-    qCDebug(qUsb) << "QUsb devices cnt " << cnt;
+
+    if (extraLogs) {
+        qCDebug(qUsb) << "libusb_get_device_list cnt" << cnt;
+    }
 
     for (int i = 0; i < cnt; i++) {
         libusb_device *dev = devs[i];
         libusb_device_descriptor desc;
 
+        if (extraLogs) {
+            qCDebug(qUsb) << "Get descriptior for" << i;
+        }
         if (libusb_get_device_descriptor(dev, &desc) == 0) {
             QUsb::Id id;
             id.pid = desc.idProduct;
@@ -342,18 +355,21 @@ QUsb::IdList QUsb::devices()
             id.port = libusb_get_port_number(dev);
 
             list.append(id);
+            if (extraLogs) {
+                qCDebug(qUsb) << "Added usb device:" << id;
+            }
         }
     }
 
     libusb_free_device_list(devs, 1);
     libusb_exit(ctx);
 
-    qCDebug(qUsb) << "QUsb devices libusb_exit";
-
-    {
+    if (extraLogs) {
+        qCDebug(qUsb) << "Get hid devices";
+    }
+    {        
         // NOTE: on some platforms hid_enumerate is not thread-safe, so we need an application-wide mutex
         QMutexLocker lock(&g_mtx_hid_enumerate);
-        qCDebug(qUsb) << "QUsb devices mutex lock";
 
         hid_devs = hid_enumerate(0x0, 0x0);
         cur_hid_dev = hid_devs;
@@ -366,12 +382,17 @@ QUsb::IdList QUsb::devices()
             id.port = 0;
 
             list.append(id);
+            if (extraLogs) {
+                qCDebug(qUsb) << "Added hid device:" << id;
+            }
 
             cur_hid_dev = cur_hid_dev->next;
         }
         hid_free_enumeration(hid_devs);
 
-        qCDebug(qUsb) << "QUsb devices mutex unlock";
+        if (extraLogs) {
+            qCDebug(qUsb) << list.count() - cnt << "hid devices added";
+        }
     }
 
     return list;

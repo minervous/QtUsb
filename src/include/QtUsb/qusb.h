@@ -104,6 +104,7 @@ protected:
 
 private:
     QUsbPrivate *const d_dummy;
+    static IdList getDevices(bool extraLogs = true);
     Q_DISABLE_COPY(QUsb)
 };
 

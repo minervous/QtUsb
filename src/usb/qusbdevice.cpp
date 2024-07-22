@@ -4,10 +4,8 @@
 
 #define DbgPrintError() qCWarning(qUsb, "In %s, at %s:%d", Q_FUNC_INFO, __FILE__, __LINE__)
 #define DbgPrintPrivFuncName()       \
-    if (m_classes.pub->m_log_level >= QUsb::logDebug) \
     qCDebug(qUsb) << "***[" << Q_FUNC_INFO << "]***"
 #define DbgPrintFuncName()       \
-    if (m_log_level >= QUsb::logDebug) \
     qCDebug(qUsb) << "***[" << Q_FUNC_INFO << "]***"
 
 static int LIBUSB_CALL DeviceLeftCallback(libusb_context *ctx,
@@ -20,8 +18,7 @@ static int LIBUSB_CALL DeviceLeftCallback(libusb_context *ctx,
     (void)libusb_get_device_descriptor(device, &desc);
     qusbdevice_classes_t *dev = reinterpret_cast<qusbdevice_classes_t *>(user_data);
 
-    if (dev->pub->logLevel() >= QUsb::logDebug)
-        qCDebug(qUsb, "DeviceLeftCallback");
+    qCDebug(qUsb, "DeviceLeftCallback");
 
     if (event == LIBUSB_HOTPLUG_EVENT_DEVICE_LEFT) {
         if (dev->priv->m_ctx == ctx && *dev->priv->m_devs == device)
@@ -286,17 +283,14 @@ qint32 QUsbDevice::open()
             if (desc.idProduct == tmp_id.pid && desc.idVendor == tmp_id.vid
                 && bus == tmp_id.bus && port == tmp_id.port
                 && desc.bDeviceClass == tmp_id.dClass && desc.bDeviceSubClass == tmp_id.dSubClass) {
-                if (m_log_level >= QUsb::logInfo)
-                    qCInfo(qUsb, "Found device");
+                qCInfo(qUsb, "Found device");
 
                 rc = libusb_open(dev, &d->m_devHandle);
                 if (rc == 0) {
                     m_id = tmp_id;
                     break;
                 }
-                else if (m_log_level >= QUsb::logWarning) {
-                    qCWarning(qUsb, "Failed to open device: %s", libusb_strerror(static_cast<enum libusb_error>(rc)));
-                }
+                qCWarning(qUsb, "Failed to open device: %s", libusb_strerror(static_cast<enum libusb_error>(rc)));
             }
         }
     }
@@ -306,35 +300,29 @@ qint32 QUsbDevice::open()
         return rc;
     }
 
-    if (m_log_level >= QUsb::logInfo)
-        qCInfo(qUsb, "Device Open");
+    qCInfo(qUsb, "Device Open");
 
     if (libusb_kernel_driver_active(d->m_devHandle, m_config.interface) == 1) { // find out if kernel driver is attached
-        if (m_log_level >= QUsb::logDebug)
-            qCDebug(qUsb, "Kernel Driver Active");
+        qCDebug(qUsb, "Kernel Driver Active");
         if (libusb_detach_kernel_driver(d->m_devHandle, m_config.interface) == 0) // detach it
-            if (m_log_level >= QUsb::logDebug)
-                qCDebug(qUsb, "Kernel Driver Detached!");
+            qCDebug(qUsb, "Kernel Driver Detached!");
     }
 
     int conf;
     libusb_get_configuration(d->m_devHandle, &conf);
 
     if (conf != m_config.config) {
-        if (m_log_level >= QUsb::logInfo)
-            qCInfo(qUsb, "Configuration needs to be changed");
+        qCInfo(qUsb, "Configuration needs to be changed");
         rc = libusb_set_configuration(d->m_devHandle, m_config.config);
         if (rc != 0) {
-            if (m_log_level >= QUsb::logWarning)
-                qCWarning(qUsb, "Cannot Set Configuration");
+            qCWarning(qUsb, "Cannot Set Configuration");
             handleUsbError(rc);
             return -3;
         }
     }
     rc = libusb_claim_interface(d->m_devHandle, m_config.interface);
     if (rc != 0) {
-        if (m_log_level >= QUsb::logWarning)
-            qCWarning(qUsb, "Cannot Claim Interface");
+        qCWarning(qUsb, "Cannot Claim Interface");
         handleUsbError(rc);
         return -4;
     }
@@ -378,8 +366,7 @@ void QUsbDevice::close()
 
     if (d->m_devHandle && m_connected) {
         // stop any further write attempts whilst we close down
-        if (m_log_level >= QUsb::logInfo)
-            qCInfo(qUsb, "Closing USB connection");
+        qCInfo(qUsb, "Closing USB connection");
 
         d->deregisterDisconnectCallback();
 
@@ -391,8 +378,7 @@ void QUsbDevice::close()
         m_connected = false;
         emit connectionChanged(m_connected);
     } else { // do not emit signal if device is already closed.
-        if (m_log_level >= QUsb::logInfo)
-            qCInfo(qUsb, "USB connection already closed");
+        qCInfo(qUsb, "USB connection already closed");
     }
 }
 
@@ -404,7 +390,7 @@ void QUsbDevice::setLogLevel(QUsb::LogLevel level)
     DbgPrintFuncName();
     Q_D(QUsbDevice);
     m_log_level = level;
-    if (level >= QUsb::logDebugAll)
+    if (level >= QUsb::logDebug)
         libusb_set_option(d->m_ctx, LIBUSB_OPTION_LOG_LEVEL, LIBUSB_LOG_LEVEL_DEBUG);
     else
         libusb_set_option(d->m_ctx, LIBUSB_OPTION_LOG_LEVEL, LIBUSB_LOG_LEVEL_NONE);
